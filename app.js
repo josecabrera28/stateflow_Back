@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const router = express.Router();
 const DB_URI = process.env.URI;
-
+const routes = require('./routes/arrendatarios');
 //create an express application
 const app = express();
 
@@ -14,6 +14,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(router);
+
+//call root route http//localhost:2000/api
+app.use("/api",routes);
 
 //create a port for the app to listen
 const port = process.env.PORT? process.env.PORT : 2001;
