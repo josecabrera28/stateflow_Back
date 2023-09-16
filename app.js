@@ -5,8 +5,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const router = express.Router();
-const DB_URI = process.env.URI;
-const routes = require('./routes/arrendatarios');
+const routes = require('./routes');
 //create an express application
 const app = express();
 

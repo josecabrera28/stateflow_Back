@@ -3,6 +3,6 @@ const {getarrendatarios} = require('../controllers/arrendatarios');
 const router = express.Router();
 
 
-router.get("/arrendatarios",getarrendatarios);
+router.get("/",getarrendatarios);
 
 module.exports = router;
