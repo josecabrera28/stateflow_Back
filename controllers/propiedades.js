@@ -5,17 +5,12 @@ const { verificarToken } = require('../utils/handleJWT');
 
 const crearPropiedad = async (req, res) =>{
     try {
-        const usuarioAutorizado = await verificarToken (req.body.token);
-        if(usuarioAutorizado){
-            req=matchedData(req);
-            const propiedadNueva = await propiedadesModel.create(req);
-            res.send(propiedadNueva);
-            res.status(201);    
-        }else{
-            handleHtttpError(res,"El usuario no tiene permisos");
-        }
+        req=matchedData(req);
+        const propiedadNueva = await propiedadesModel.create(req);
+        res.send(propiedadNueva);
+        res.status(201);    
     } catch (error) {
-        handleHtttpError(res,"Error de autenticacion");
+        handleHtttpError(res,error);
     }
 }
 

@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 //create usuarios scheme
 const usuariosScheme = mongoose.Schema(
     {
+    id_rol: {type: mongoose.Schema.Types.ObjectId, ref:'roles'},
     nombre: String,
     apellido: String,
     edad: Number,
@@ -16,4 +17,4 @@ const usuariosScheme = mongoose.Schema(
 );
 
 //export usuarios scheme
-module.exports = mongoose.model("usuarios",usuariosScheme);
+module.exports = mongoose.model("usuarios",usuariosScheme,);

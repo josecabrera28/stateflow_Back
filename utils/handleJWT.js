@@ -6,7 +6,8 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const firmarToken = async (usuario) =>{
     const firma = await jwt.sign(
         {
-            _id: usuario._id
+            _id: usuario._id,
+            rol: usuario.id_rol
         },
         JWT_SECRET,
         {
@@ -22,7 +23,7 @@ const verificarToken = async (jwtToken)=>{
         const esValido = await jwt.verify(jwtToken,JWT_SECRET);
         return esValido;        
     } catch (error) {
-        handleHtttpError(res, error);
+        return null;
     }
 }
 
