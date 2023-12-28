@@ -28,7 +28,6 @@ const listaPropiedades = async (req,res)=>{
         handleHtttpError(res,"Error al cargar lista de propiedades")
     }
 }
-
 //obtener una propiedad con usuario propietario o admin
 const obtenerPropiedad = async (req, res) =>{
     try {
@@ -44,18 +43,18 @@ const obtenerPropiedad = async (req, res) =>{
         handleHtttpError(res, "Error al conseguir propiedad");
     }
 }
-
+//borrar una propiedad con usuario propietario
 const borrarPropiedad = async (req, res) =>{
     try {
-        const usuarioAutorizado = await verificarToken (req.body.token);
-        if(usuarioAutorizado){
-            req = matchedData(req);
-            const {id} = req;
-            const data = await propiedadesModel.findByIdAndDelete({_id:id});
-            res.send(data);    
+        const id = req.params.id;
+        const user = req.usuario._id;
+        const propiedad = await propiedadesModel.find({_id:id, propietario:user});
+        if (!propiedad || propiedad.length === 0) {
+            handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
         }else{
-            handleHtttpError(res,"El usuario no tiene permisos");
-        }
+            const propiedadEliminada = await propiedadesModel.deleteOne({_id:id, propietario:user});
+            res.send({propiedadEliminada,propiedad});    
+        }        
     } catch (error) {
         handleHtttpError(res,"Error al borrar propiedad");
     }

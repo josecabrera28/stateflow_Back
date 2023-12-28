@@ -23,10 +23,5 @@ const validarPropiedadNueva = [
     }
 ]
 
-const validarPropiedad = [
-    check("id").exists().notEmpty().isMongoId(),
-    (req,res,next)=>{
-        validateResults(req,res,next);
-    }
-]
-module.exports = {validarPropiedadNueva, validarPropiedad}
+
+module.exports = {validarPropiedadNueva}
