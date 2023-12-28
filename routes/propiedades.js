@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/lista', authMiddleware, checkRole(["propietario","admin"]), listaPropiedades);
 
 //obtener Propiedad
-router.get('/:id',authMiddleware, checkRole(["propietario","admin"]), validarPropiedad, obtenerPropiedad);
+router.get('/:id',authMiddleware, checkRole(["propietario","admin"]), obtenerPropiedad);
 
 //crear una propiedad
 router.post('/nueva',authMiddleware, checkRole(["propietario"]),validarPropiedadNueva,crearPropiedad);

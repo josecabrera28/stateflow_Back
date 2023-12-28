@@ -3,11 +3,12 @@ const handleHtttpError = require('../utils/handleError');
 const { rolesModel } = require('../models');
 
 
-const checkRole = (rol) => async (req,res,next) =>{
+const checkRole = (roles) => async (req,res,next) =>{
     try {
         const reqUserRol = req.usuario.id_rol;
         const dbRol = await rolesModel.findById(reqUserRol);
-        if(dbRol.rol == rol){
+        const checkValueRole = roles.some((rolSingle) => dbRol.rol.includes(rolSingle));
+        if(checkValueRole){
             next();
         }else{
             handleHtttpError(res, "El usuario no tiene permisos");
