@@ -33,7 +33,15 @@ const propiedadesScheme = mongoose.Schema(
     },
     ingresos:
     {
-        arriendos:[]  //debera ser alimentado con la informacion de cada arrendatario luego de crear la propiedad
+        arriendos:[
+            {
+                tipo: String, // cuarto o parqueadero
+                arriendoId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'arriendos', // Referencia al modelo de arriendos
+                },
+            }
+        ]  
     }
     },
     {

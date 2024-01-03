@@ -18,6 +18,7 @@ const validarPropiedadNueva = [
     check("gastos.credito.plazo").exists().notEmpty().isNumeric(),
     check("gastos.credito.tasa").exists().notEmpty().isNumeric(),
     check("gastos.credito.cuota").exists().notEmpty().isNumeric(),
+    check("ingresos.arriendos").exists(),
     (req,res,next)=>{
         validateResults(req,res,next);
     }

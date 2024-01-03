@@ -1,5 +1,5 @@
 const { matchedData } = require('express-validator');
-const {propiedadesModel} = require('../models');
+const {propiedadesModel, arriendosModel} = require('../models');
 const handleHtttpError = require('../utils/handleError');
 const { verificarToken } = require('../utils/handleJWT');
 
@@ -7,6 +7,46 @@ const { verificarToken } = require('../utils/handleJWT');
 const crearPropiedad = async (req, res) =>{
     try {
         req=matchedData(req);
+        const cuartos = req.cuartos;
+        const parqueaderos = req.parqueaderos;
+        if(cuartos>=1 && cuartos<=10){
+            for (let i=0; i<cuartos; i++){
+                //crear arriendo de tipo cuarto en la base de datos
+                const arriendoCuarto = await arriendosModel.create({
+                    tipo: 'cuarto',
+                    precio: 0,
+                    arrendatario: undefined,
+                    arrendado: false
+                });
+
+                //añadir arriendo a la lista de arriendos en la propiedad
+                req.ingresos.arriendos.push({
+                    tipo: 'cuarto',
+                    arriendoId: arriendoCuarto._id
+                })
+            }
+        }else {
+            handleHtttpError(res,"numero de cuartos o parqueaderos invalido");
+        }        
+        if(parqueaderos>=1 && parqueaderos <=10){
+            for(let i=0; i<parqueaderos; i++){
+                //crear arriendo de tipo parqueadero en la base de datos
+                const arriendoParqueadero = await arriendosModel.create({
+                    tipo: 'parqueadero',
+                    precio: 0,
+                    arrendatario: undefined,
+                    arrendado: false
+                });
+
+                //añadir arriendo a la lista de arriendos en la propiedad
+                req.ingresos.arriendos.push({
+                    tipo: 'parqueadero',
+                    arriendoId: arriendoParqueadero._id
+                })
+            }
+        }else{
+            handleHtttpError(res,"numero de cuartos o parqueaderos invalido");
+        }
         const propiedadNueva = await propiedadesModel.create(req);
         res.send(propiedadNueva);
         res.status(201);    
