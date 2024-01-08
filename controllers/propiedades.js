@@ -28,7 +28,7 @@ const crearPropiedad = async (req, res) =>{
         }else {
             handleHtttpError(res,"numero de cuartos o parqueaderos invalido");
         }        
-        if(parqueaderos>=1 && parqueaderos <=10){
+        if(parqueaderos>=0 && parqueaderos <=10){
             for(let i=0; i<parqueaderos; i++){
                 //crear arriendo de tipo parqueadero en la base de datos
                 const arriendoParqueadero = await arriendosModel.create({
