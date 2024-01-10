@@ -73,7 +73,7 @@ const listaPeticiones = async(req,res) =>{
 }
 
 //confirma o cancela una peticion
-const responderPeticion = async(req,res) =>{
+const responderPeticion = async(req,res,next) =>{
     try {
         const id = req.params.id;
         const respuesta = req.body.estado;
@@ -81,23 +81,30 @@ const responderPeticion = async(req,res) =>{
             handleHtttpError(res, "respuesta no valida, debe ser confirmado o cancelado");
             return;
         }
-        const peticion = await peticionesModel.find({_id:id});
-        if(peticion.estado!="pendiente"){
-            handleHtttpError(res,"esta peticion ya fue respondida");
-            return;
-        }
+        const peticion = await peticionesModel.findById({_id:id});
         if (!peticion || peticion.length === 0) {
             handleHtttpError(res, "La peticion no existe o no pertenece a este usuario");
             return;
-        }else{
-            const actualizado = await peticionesModel.updateOne(
-                {_id:id},
-                {$set:{estado: respuesta}}
+        }if(peticion.estado != "pendiente"){
+            handleHtttpError(res,"esta peticion ya fue respondida");
+            return;
+        }
+        else{
+            const actualizado = await peticionesModel.findByIdAndUpdate(
+                id,
+                { $set: { estado: respuesta } },
+                { new: true }
             );
-            res.send(actualizado);    
-        }        
+            req.actualizado = actualizado;
+            if(actualizado.estado == 'cancelado'){
+                res.send(actualizado);
+                return;
+            }
+            next();
+        }                     
     } catch (error) {
-        handleHtttpError(res, "Error al conseguir propiedad");
+        console.log(error);
+        handleHtttpError(res, error);
     }
 }
 

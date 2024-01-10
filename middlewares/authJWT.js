@@ -10,6 +10,7 @@ const authMiddleware = async (req, res, next) => {
         const session = await verificarToken(req.headers.authorization.split(" ").pop());
         if(session){
             const dataUsuario = await usuariosModel.findById(session._id);
+            dataUsuario.contraseña = undefined;
             req.usuario=dataUsuario;
             next();
         }else{
