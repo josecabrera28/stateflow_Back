@@ -8,9 +8,8 @@ const crearPeticion = async (req,res) =>{
         req = matchedData(req);
         let arriendo = req.arriendo;
         let arrendatario = req.arrendatario;
-        let peticionExiste = await peticionesModel.find({arriendo,arrendatario});
+        let peticionExiste = await peticionesModel.find({arriendo,arrendatario, estado: 'pendiente'});
         if(peticionExiste.length>=1){
-            console.log(peticionExiste);
             handleHtttpError(res,'Ya existe una peticion con el arriendo seleccionado');
             return;
         } 
@@ -83,23 +82,28 @@ const responderPeticion = async(req,res,next) =>{
         }
         const peticion = await peticionesModel.findById({_id:id});
         if (!peticion || peticion.length === 0) {
-            handleHtttpError(res, "La peticion no existe o no pertenece a este usuario");
+            handleHtttpError(res, "La peticion no existe");
             return;
         }if(peticion.estado != "pendiente"){
             handleHtttpError(res,"esta peticion ya fue respondida");
             return;
         }
         else{
-            const actualizado = await peticionesModel.findByIdAndUpdate(
+            const peticionActualizada = await peticionesModel.findByIdAndUpdate(
                 id,
                 { $set: { estado: respuesta } },
                 { new: true }
             );
-            req.actualizado = actualizado;
-            if(actualizado.estado == 'cancelado'){
-                res.send(actualizado);
+            req.actualizado = peticionActualizada;
+            if(peticionActualizada.estado == 'cancelado'){
+                res.send(peticionActualizada);
                 return;
             }
+            const arriendoActualizado = await arriendosModel.findByIdAndUpdate(
+                peticion.arriendo,
+                { $set: { arrendado: true, arrendatario: peticion.arrendatario} },
+                { new: true }
+            );
             next();
         }                     
     } catch (error) {
