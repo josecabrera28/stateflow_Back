@@ -1,9 +1,10 @@
 const express = require('express');
 const { validarPropiedadNueva } = require('../validators/validadorPropiedades');
-const {crearPropiedad, borrarPropiedad, listaPropiedades, obtenerPropiedad} = require('../controllers/propiedades');
+const {crearPropiedad, borrarPropiedad, listaPropiedades, obtenerPropiedad, nuevoGasto} = require('../controllers/propiedades');
 const authMiddleware = require('../middlewares/authJWT');
 const checkRole = require('../middlewares/rol');
 const { darPrecio, removerarrendatario } = require('../controllers/arriendo');
+const { validadorGasto } = require('../validators/validadorGasto');
 const router = express.Router();
 
 
@@ -24,5 +25,8 @@ router.put('/precio/:idPropiedad/:arriendoId',authMiddleware, checkRole(["propie
 
 //remover arrendatario de un arriendo
 router.put('/removerarrendatario/:idPropiedad/:arriendoId',authMiddleware, checkRole(["propietario"]), removerarrendatario);
+
+//ingresar gastos de una propiedad
+router.post('/:id/nuevogasto',authMiddleware, checkRole(["propietario"]),validadorGasto,nuevoGasto);
 
 module.exports=router;

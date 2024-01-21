@@ -12,25 +12,15 @@ const propiedadesScheme = mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: 'usuarios' // Referencia al modelo de usuarios
     },
-    gastos:
-    {
-        servicios:
+    gastos:[
         {
-            energia: Number,
-            gas: Number,
-            agua: Number,
-            internet: Number,
-            administracion: Number,
-        },
-        credito: 
-        {
-            esCredito: Boolean,
-            monto: Number,
-            plazo: Number,
-            tasa: Number,
-            cuota: Number
-        },
-    },
+            año: {type: Number, unique: true},
+            registros: [{
+                type: mongoose.Schema.Types.ObjectId, 
+                ref: 'registros' 
+            }], 
+        }
+    ],
     ingresos:
     {
         arriendos:[
