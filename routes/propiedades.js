@@ -1,6 +1,6 @@
 const express = require('express');
 const { validarPropiedadNueva } = require('../validators/validadorPropiedades');
-const {crearPropiedad, borrarPropiedad, listaPropiedades, obtenerPropiedad, nuevoGasto} = require('../controllers/propiedades');
+const {crearPropiedad, borrarPropiedad, listaPropiedades, obtenerPropiedad, nuevoGasto, listaGastosAño, listaGastosMes} = require('../controllers/propiedades');
 const authMiddleware = require('../middlewares/authJWT');
 const checkRole = require('../middlewares/rol');
 const { darPrecio, removerarrendatario } = require('../controllers/arriendo');
@@ -28,5 +28,11 @@ router.put('/removerarrendatario/:idPropiedad/:arriendoId',authMiddleware, check
 
 //ingresar gastos de una propiedad
 router.post('/:id/nuevogasto',authMiddleware, checkRole(["propietario"]),validadorGasto,nuevoGasto);
+
+//lista de gastos por año
+router.get('/listagastos/:idpropiedad/:periodo',authMiddleware, checkRole(["propietario"]),listaGastosAño);
+
+//lista de gastos por mes
+router.get('/gastosmes/:idpropiedad/:periodo/:mes',authMiddleware, checkRole(["propietario"]),listaGastosMes);
 
 module.exports=router;

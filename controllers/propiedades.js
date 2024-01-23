@@ -163,4 +163,72 @@ const nuevoGasto = async (req,res) =>{
         handleHtttpError(res, "Error al ingresar gasto");
     }
 }
-module.exports = {crearPropiedad, borrarPropiedad, listaPropiedades, obtenerPropiedad, nuevoGasto};
+//obtener gastos de una propiedad de un mes de un año 
+const listaGastosMes = async (req, res) => {
+    try {
+        const id = req.params.idpropiedad;
+        const año = parseInt(req.params.periodo);
+        const mes = parseInt(req.params.mes);
+        const user = req.usuario._id;
+        const propiedad = await propiedadesModel.findOne({_id:id, propietario:user})
+        .populate({
+            path: 'gastos.registros',
+            model: 'registros',
+        });
+        if (!propiedad) {
+            handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
+        }
+        for(let i=0; i<propiedad.gastos.length; i++){
+            if(propiedad.gastos[i].año == año){
+                for(let j=0; j<propiedad.gastos[i].registros.length;j++){
+                    if(propiedad.gastos[i].registros[j].mes == mes){
+                        res.send(propiedad.gastos[i].registros[j]);
+                        return;
+                    }
+                }
+            }
+        }
+        handleHtttpError(res, `No se tienen registros del año ${año} y/o mes ${mes}`);
+    } catch (error) {
+        console.log(error);
+        handleHtttpError(res, "Error al conseguir gastos del año");
+    }
+}
+//obtener gastos de una propiedad de un año
+const listaGastosAño = async (req, res) => {
+    try {
+        const id = req.params.idpropiedad;
+        const año = parseInt(req.params.periodo);
+        const user = req.usuario._id;
+        const propiedad = await propiedadesModel.findOne({_id:id, propietario:user})
+        .populate({
+            path: 'gastos.registros',
+            model: 'registros',
+        });
+        if (!propiedad) {
+            handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
+        }
+        for(let i=0; i<propiedad.gastos.length; i++){
+            if(propiedad.gastos[i].año == año){
+                res.send(propiedad.gastos[i]);
+            }
+        }
+    } catch (error) {
+        console.log(error);
+        handleHtttpError(res, "Error al conseguir gastos del año");
+    }
+}
+//eliminar un gasto de una propiedad de un mes especifico como propietario
+const elimiarGasto = async (req, res) => {
+
+}
+
+module.exports = {
+    crearPropiedad,
+    borrarPropiedad,
+    listaPropiedades,
+    obtenerPropiedad,
+    nuevoGasto,
+    listaGastosMes,
+    listaGastosAño,
+    elimiarGasto};
