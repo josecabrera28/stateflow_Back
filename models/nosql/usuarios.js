@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
-//create usuarios scheme
+/**modelo de usuarios con atributos id_rol(referenciando la collecion de roles), nombre, apellido, edad,
+ *  email y contraseña*/
 const usuariosScheme = mongoose.Schema(
     {
     id_rol: {type: mongoose.Schema.Types.ObjectId, ref:'roles'},

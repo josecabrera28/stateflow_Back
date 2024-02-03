@@ -3,7 +3,7 @@ const handleHtttpError = require('./handleError');
 const { usuariosModel, propiedadesModel, arriendosModel } = require('../models');
 const { default: mongoose } = require('mongoose');
 
-
+//funcion asincrona encargada de la generacion del contrato en formato pdf
 const generate = async (req, res) =>{
     try { 
         let arrendatario = req.actualizado.arrendatario;

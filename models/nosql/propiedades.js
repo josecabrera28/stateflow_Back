@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+/*modelo de propiedades con atributos tipo, ubicacion, m2, cuartos, parqueaderos,
+ propietario, gastos, e ingresos (referenciando colecciones de usuarios, registros y arriendos)*/
 const propiedadesScheme = mongoose.Schema(
     {
     tipo: String, //casa o apartamento

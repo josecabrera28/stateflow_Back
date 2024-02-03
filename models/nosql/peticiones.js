@@ -1,5 +1,7 @@
 const mongoose = require ('mongoose');
 
+/*modelo de peticiones con atributos esCuarto, esParqueadero, estado, notas, arriendo y arrendatario 
+(referenciando colecciones de usuarios y arriendos)*/
 const peticionesScheme = mongoose.Schema(
     {
         esCuarto: Boolean,

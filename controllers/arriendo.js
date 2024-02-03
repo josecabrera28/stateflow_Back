@@ -1,6 +1,10 @@
 const { arriendosModel, propiedadesModel } = require('../models');
 const handleHtttpError = require('../utils/handleError');
-
+/**valida que la propiedad a la que pertenece el arriendo que busca 
+ * cambiar el precio sea del usuario que hace la consulta; busca el
+ * arriendo al cual le quiere cambiar el precio y actualiza el valor
+ * de esta propiedad
+ */
 const darPrecio = async (req,res) =>{
     try {
         const nuevoPrecio = req.body.precio;
@@ -22,7 +26,7 @@ const darPrecio = async (req,res) =>{
                     res.send(nuevoArriendo);
                 }
             }if(nuevoArriendo==undefined){
-                handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
+                handleHtttpError(res, "El arriendo no existe o no pertenece a este usuario");
             }
         }        
     } catch (error) {
@@ -31,7 +35,12 @@ const darPrecio = async (req,res) =>{
     }
 
 }
-
+/**valida que la propiedad a la que pertenece el arrrendatario que busca 
+ * remover sea del usuario que hace la consulta; busca el
+ * arriendo que contiene dicho arrendatario y actualiza el valor
+ * del atributo arrendado a falso y remueve el campo arrendatario del 
+ * arriendo en mencion
+ */
 const removerarrendatario = async(req,res)=>{
     try {
         const arriendo = req.params.arriendoId;
@@ -52,7 +61,7 @@ const removerarrendatario = async(req,res)=>{
                     res.send(nuevoArriendo);
                 }
             }if(nuevoArriendo==undefined){
-                handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
+                handleHtttpError(res, "El arriendo no existe o no pertenece a este usuario");
             }
         }        
     } catch (error) {

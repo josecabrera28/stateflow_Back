@@ -1,12 +1,13 @@
 const { matchedData } = require('express-validator');
 const {propiedadesModel, arriendosModel, registrosModel, } = require('../models');
 const handleHtttpError = require('../utils/handleError');
-const { verificarToken } = require('../utils/handleJWT');
 
 //Crear una propiedad con usuario propietario
 const crearPropiedad = async (req, res) =>{
-    try {
+    try {        
+        const usuarioMiddleware = req.usuario._id;
         req=matchedData(req);
+        req.propietario = usuarioMiddleware;
         const cuartos = req.cuartos;
         const parqueaderos = req.parqueaderos;
         if(cuartos>=1 && cuartos<=10){
@@ -49,16 +50,17 @@ const crearPropiedad = async (req, res) =>{
         }
         const propiedadNueva = await propiedadesModel.create(req);
         res.send(propiedadNueva);
-        res.status(201);    
+        res.status(201);
     } catch (error) {
-        handleHtttpError(res,error);
+        console.log(error);
+        handleHtttpError(res,"Error al crear la propiedad");
     }
 }
 //Crear una propiedad con usuario propietario o admin
 const listaPropiedades = async (req,res)=>{
     let lista = {};
     try {
-        if(req.usuario.id_rol == "65860823a6118723dcbc0ac3"){
+        if(req.usuario.id_rol.rol == "admin"){
             lista = await propiedadesModel.find({});
         }else{
             lista = await propiedadesModel.find({propietario: req.usuario._id});
@@ -73,8 +75,8 @@ const obtenerPropiedad = async (req, res) =>{
     try {
         const id = req.params.id;
         const user = req.usuario._id;
-        const propiedad = await propiedadesModel.find({_id:id, propietario:user});
-        if (!propiedad || propiedad.length === 0) {
+        const propiedad = await propiedadesModel.findOne({_id:id, propietario:user});
+        if (!propiedad) {
             handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
         }else{
             res.send(propiedad);    
@@ -88,6 +90,9 @@ const borrarPropiedad = async (req, res) =>{
     try {
         const id = req.params.id;
         const user = req.usuario._id;
+        /**valida que la propiedad a eliminar sea del usuario
+         * que esta haciendo la solicitud
+         */
         const propiedad = await propiedadesModel.find({_id:id, propietario:user});
         if (!propiedad || propiedad.length === 0) {
             handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
@@ -105,10 +110,14 @@ const nuevoGasto = async (req,res) =>{
         const id = req.params.id;
         const user = req.usuario._id;
         const gastos = matchedData(req);
+        /**valida que la propiedad a crear el nuevo gasto sea del usuario
+         * que esta haciendo la solicitud
+         */
         const propiedad = await propiedadesModel.findOne({_id:id, propietario:user});
         
         if (!propiedad) {
             handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
+            return;
         }
         //crear nuevo gasto
         const nuevoGasto = await registrosModel.create(gastos);
@@ -170,6 +179,9 @@ const listaGastosMes = async (req, res) => {
         const año = parseInt(req.params.periodo);
         const mes = parseInt(req.params.mes);
         const user = req.usuario._id;
+        /**valida que la propiedad refernte a los gastos a listar
+         * sea del usuario que esta haciendo la solicitud
+         */
         const propiedad = await propiedadesModel.findOne({_id:id, propietario:user})
         .populate({
             path: 'gastos.registros',
@@ -177,7 +189,11 @@ const listaGastosMes = async (req, res) => {
         });
         if (!propiedad) {
             handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
+            return;
         }
+        /**busca el gasto del mes especificado recorriendo el objeto
+         * del año
+         *  */
         for(let i=0; i<propiedad.gastos.length; i++){
             if(propiedad.gastos[i].año == año){
                 for(let j=0; j<propiedad.gastos[i].registros.length;j++){
@@ -200,6 +216,9 @@ const listaGastosAño = async (req, res) => {
         const id = req.params.idpropiedad;
         const año = parseInt(req.params.periodo);
         const user = req.usuario._id;
+        /**valida que la propiedad referente a los gastos a listar
+         * sea del usuario que esta haciendo la solicitud
+         */
         const propiedad = await propiedadesModel.findOne({_id:id, propietario:user})
         .populate({
             path: 'gastos.registros',
@@ -207,20 +226,61 @@ const listaGastosAño = async (req, res) => {
         });
         if (!propiedad) {
             handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
+            return;
         }
+        /**busca el año solicitado y traer todo el objeto con los gastos
+         * del todo el año
+        */
         for(let i=0; i<propiedad.gastos.length; i++){
             if(propiedad.gastos[i].año == año){
                 res.send(propiedad.gastos[i]);
+                return;
             }
         }
+        handleHtttpError(res, `Error al conseguir gastos del año ${año}`);
     } catch (error) {
         console.log(error);
-        handleHtttpError(res, "Error al conseguir gastos del año");
+        handleHtttpError(res, "Error al conseguir gastos por año");
     }
 }
 //eliminar un gasto de una propiedad de un mes especifico como propietario
 const elimiarGasto = async (req, res) => {
-
+    try {
+        const id = req.params.idpropiedad;
+        const año = parseInt(req.params.periodo);
+        const mes = parseInt(req.params.mes);
+        const user = req.usuario._id;
+        const propiedad = await propiedadesModel.findOne({_id:id, propietario:user})
+        .populate({
+            path: 'gastos.registros',
+            model: 'registros',
+        });
+        if (!propiedad) {
+            handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
+            return;
+        }
+        for(let i=0; i<propiedad.gastos.length; i++){
+            if(propiedad.gastos[i].año == año){
+                for(let j=0; j<propiedad.gastos[i].registros.length;j++){
+                    if(propiedad.gastos[i].registros[j].mes == mes){
+                        const registroId = propiedad.gastos[i].registros[j]._id;
+                        const propiedadActualizada = await propiedadesModel.updateOne(
+                            { _id: propiedad._id },
+                            { $pull: { [`gastos.${i}.registros`]: registroId } },
+                            { new: true }
+                        );
+                        const registroEliminado = await registrosModel.findByIdAndDelete(registroId);
+                        res.send({registroEliminado, propiedadActualizada});
+                        return;
+                    }
+                }
+            }
+        }
+        handleHtttpError(res, `No se tienen registros del año ${año} y/o mes ${mes}`);
+    } catch (error) {
+        console.log(error);
+        handleHtttpError(res, "Error al conseguir gastos del año");
+    }
 }
 
 module.exports = {

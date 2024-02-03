@@ -1,3 +1,4 @@
+//models object with each no sql model for destructured importing
 const models = {
     usuariosModel: require('./nosql/usuarios'),
     propiedadesModel: require('./nosql/propiedades'),

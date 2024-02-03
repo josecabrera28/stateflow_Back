@@ -2,12 +2,13 @@ const mongoose = require ('mongoose');
 const handleHtttpError = require('../utils/handleError');
 const { rolesModel } = require('../models');
 
-
+/**chequea el rol que tiene el usuario y el array de roles permitidos
+ * para la ruta especifica y si lo incluye pasa al siguiente
+ */
 const checkRole = (roles) => async (req,res,next) =>{
     try {
-        const reqUserRol = req.usuario.id_rol;
-        const dbRol = await rolesModel.findById(reqUserRol);
-        const checkValueRole = roles.some((rolSingle) => dbRol.rol.includes(rolSingle));
+        const dbRol = req.usuario.id_rol.rol;
+        const checkValueRole = roles.includes(dbRol);
         if(checkValueRole){
             next();
         }else{

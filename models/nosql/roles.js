@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+/**modelo de roles con atributo rol
+ */
 const RolesScheme = mongoose.Schema({
     rol: String,
 })

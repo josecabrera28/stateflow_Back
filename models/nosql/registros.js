@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+/*modelo de registros con atributos año, mes, servicios y credito*/
 const registrosScheme = mongoose.Schema({
     año: Number,
     mes: Number,
