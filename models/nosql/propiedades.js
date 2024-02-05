@@ -16,7 +16,7 @@ const propiedadesScheme = mongoose.Schema(
     },
     gastos:[
         {
-            año: {type: Number, unique: true},
+            año: Number,
             registros: [{
                 type: mongoose.Schema.Types.ObjectId, 
                 ref: 'registros' 

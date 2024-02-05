@@ -10,6 +10,10 @@ const crearPropiedad = async (req, res) =>{
         req.propietario = usuarioMiddleware;
         const cuartos = req.cuartos;
         const parqueaderos = req.parqueaderos;
+        if(req.tipo != 'casa' && req.tipo != 'apartamento'){
+            handleHtttpError(res, 'El campo tipo de propiedad debe ser casa o apartamento en minusculas');
+            return;
+        }
         if(cuartos>=1 && cuartos<=10){
             for (let i=0; i<cuartos; i++){
                 //crear arriendo de tipo cuarto en la base de datos
@@ -27,7 +31,8 @@ const crearPropiedad = async (req, res) =>{
                 })
             }
         }else {
-            handleHtttpError(res,"numero de cuartos o parqueaderos invalido");
+            handleHtttpError(res,"numero de cuartos o parqueaderos fuera de rango [1-10]");
+            return;
         }        
         if(parqueaderos>=0 && parqueaderos <=10){
             for(let i=0; i<parqueaderos; i++){
@@ -88,15 +93,27 @@ const obtenerPropiedad = async (req, res) =>{
 //borrar una propiedad con usuario propietario
 const borrarPropiedad = async (req, res) =>{
     try {
+        //id de la propiedad lo obtiene por la url en su parametro id
         const id = req.params.id;
         const user = req.usuario._id;
         /**valida que la propiedad a eliminar sea del usuario
          * que esta haciendo la solicitud
          */
-        const propiedad = await propiedadesModel.find({_id:id, propietario:user});
-        if (!propiedad || propiedad.length === 0) {
+        const propiedad = await propiedadesModel.findOne({_id:id, propietario:user});
+        if (!propiedad) {
             handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
         }else{
+            //eliminar referencias de arriendos
+            for(let i=0; i<propiedad.ingresos.arriendos.length; i++){
+                await arriendosModel.deleteOne({_id: propiedad.ingresos.arriendos[i].arriendoId});
+            }
+            //eliiminar referencias de registros
+            for(let i=0; i<propiedad.gastos.length; i++){
+                for(let j=0; j<propiedad.gastos[i].registros.length;j++){
+                    await registrosModel.deleteOne({_id: propiedad.gastos[i].registros[j]});
+                }
+            }
+            //eliminar propiedad
             const propiedadEliminada = await propiedadesModel.deleteOne({_id:id, propietario:user});
             res.send({propiedadEliminada,propiedad});    
         }        
@@ -113,12 +130,34 @@ const nuevoGasto = async (req,res) =>{
         /**valida que la propiedad a crear el nuevo gasto sea del usuario
          * que esta haciendo la solicitud
          */
-        const propiedad = await propiedadesModel.findOne({_id:id, propietario:user});
+        const propiedad = await propiedadesModel.findOne({_id:id, propietario:user})
+        .populate(
+            {
+                path: 'gastos.registros',
+                model: 'registros',
+            }
+        );
         
         if (!propiedad) {
             handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
             return;
         }
+
+        /**valida que el no exista un gasto en la propiedad para el año
+         * y mes de la solicitud, en caso de ya existir alguno, responde
+         * con una error informando que ya existe un gasto y/o solicitando
+         * que elimine el actual en caso de querer actualizarlo 
+         */
+        const existingExpense = propiedad.gastos.some(
+            (gasto) => gasto.año === gastos.año && gasto.registros.some((registro) => registro.mes === gastos.mes)
+        );
+        
+        if (existingExpense) {
+            handleHtttpError(res, `Ya existe un registro de gastos para el año ${gastos.año} y mes ${gastos.mes}` +
+                `. Si deseas actualizar dicho registro, debes primero eliminar el gasto actual y luego crear el nuevo gasto`);
+            return;
+        }
+        
         //crear nuevo gasto
         const nuevoGasto = await registrosModel.create(gastos);
         //ingresar nuevo gasto si no hay ningun gasto
@@ -168,7 +207,6 @@ const nuevoGasto = async (req,res) =>{
             res.send(propiedadActualizada);
         }
     } catch (error) {
-        console.log(error);
         handleHtttpError(res, "Error al ingresar gasto");
     }
 }

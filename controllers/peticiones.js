@@ -6,9 +6,15 @@ const handleHtttpError = require('../utils/handleError');
 const crearPeticion = async (req,res) =>{
     try {
         //valida que el cuerpo de la peticion concuerde con el modelo y descarta cualquier otra informacion innecesaria
+        const arrendatario = req.usuario._id;
         req = matchedData(req);
+        req.arrendatario = arrendatario;
         let arriendo = req.arriendo;
-        let arrendatario = req.arrendatario;
+        /**valida que el estado de la peticion solo sea pendiente */
+        if(req.estado != 'pendiente'){
+            handleHtttpError(res,'Para solicitar un arriendo el estado debe ser pendiente');
+            return;
+        }
         /**busca en la bd si existe alguna otra peticion que concuerde con el arriendo, arrendatario y estado "pendiente"
          * enviado en la peticion
          * */
@@ -22,6 +28,10 @@ const crearPeticion = async (req,res) =>{
         } 
         //en caso de no encontrar ningun documento que concuerde busca el arriendo solicitado con el id
         arriendo = await arriendosModel.findById(arriendo);
+        if(!arriendo){
+            handleHtttpError(res,'No existe el arriendo seleccionado');
+            return;
+        }
         arriendo = arriendo.tipo;
         //define propiedades esCuarto y esParqueadero dependiendo si el arriendo obtenido es un cuarto o un parqueadero
         switch (arriendo) {
@@ -49,10 +59,8 @@ const crearPeticion = async (req,res) =>{
 const listaPeticiones = async(req,res) =>{
     try {
         //obtiene el id del usuario de la peticion para discriminar si es propietario o arrendatario
-        let usuarioID = req.usuario._id;
-        //busca el rol solicitado en la peticion en la colleccion de roles
-        let usuarioRol = await rolesModel.findById(req.usuario.id_rol);
-        usuarioRol = usuarioRol.rol;
+        const usuarioID = req.usuario._id;
+        const usuarioRol = req.usuario.id_rol.rol;
         let lista= new Array;
         //caminos dependiendo de su rol si es propietario o arrendatario
         switch (usuarioRol) {
@@ -86,6 +94,7 @@ const listaPeticiones = async(req,res) =>{
         }
         res.send(lista);   
     } catch (error) {
+        console.log(error);
         handleHtttpError(res,'Error al obtener lista de peticiones');
     }
 }
@@ -107,11 +116,21 @@ const responderPeticion = async(req,res,next) =>{
             return;
         /**si la peticion esta confimado o cancelado quiere decir que ya ha
          * sido respondida*/ 
-        }if(peticion.estado != "pendiente"){
+        }
+        if(peticion.estado != "pendiente"){
             handleHtttpError(res,"esta peticion ya fue respondida");
             return;
         }
-        else{
+        let esMiPropiedad = false;
+        const propiedadesPropias = await propiedadesModel.find({propietario: req.usuario._id});
+        for (let index = 0; index < propiedadesPropias.length; index++) {
+            for (let j = 0; j < propiedadesPropias[index].ingresos.arriendos.length; j++) {
+                if(propiedadesPropias[index].ingresos.arriendos[j].arriendoId.equals(peticion.arriendo)){
+                    esMiPropiedad = true;
+                }
+            }
+        }
+        if(esMiPropiedad){
             /**actualiza el estado de la peticion con confirmado o cancelado
              * segun sea la decision del propietario
             */
@@ -136,10 +155,12 @@ const responderPeticion = async(req,res,next) =>{
                 { new: true }
             );
             next();
-        }                     
+        }else{
+            handleHtttpError(res, 'El arriendo no existe o no pertenece a este usuario');
+        }          
     } catch (error) {
         console.log(error);
-        handleHtttpError(res, error);
+        handleHtttpError(res, 'Error al reponder peticion');
     }
 }
 

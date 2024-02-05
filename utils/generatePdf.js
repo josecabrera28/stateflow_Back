@@ -32,6 +32,7 @@ const generate = async (req, res) =>{
                 }
             }
         }
+        console.log(propiedad);
         //busca el arriendo
         let arriendoDetalles = await arriendosModel.findById(req.actualizado.arriendo);
         

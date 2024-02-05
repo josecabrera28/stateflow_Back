@@ -5,6 +5,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const routes = require('./routes');
+const { rolesModel, usuariosModel } = require("./models");
+const { encrypt } = require("./utils/handlePassword");
 
 //creates a Router
 const router = express.Router();
@@ -30,10 +32,40 @@ app.listen(port,()=>{
 //funcion asincrona para la conexion a la base de datos ya que es un recurso externo
 async function mongoConnection (){
     try {
+        //conexion
         await mongoose.connect(process.env.URI,{
             useNewUrlParser: true,
             useUnifiedTopology: true,
-        }); 
+        });
+        //creacion de roles
+        let roles = await rolesModel.find({});
+        if (!roles.some((rol) => rol.rol === 'propietario')) {
+            console.log('Creando rol "propietario"');
+            const nuevoRolPropietario = await rolesModel.create({ rol: 'propietario' });
+            roles.push(nuevoRolPropietario);
+        }
+    
+        if (!roles.some((rol) => rol.rol === 'arrendatario')) {
+            console.log('Creando rol "arrendatario"');
+            const nuevoRolArrendatario = await rolesModel.create({ rol: 'arrendatario' });
+            roles.push(nuevoRolArrendatario);
+        }
+    
+        if (!roles.some((rol) => rol.rol === 'admin')) {
+            passEncrypted = await encrypt(process.env.ADMIN_PASSWORD);
+            const nuevoRolAdmin = await rolesModel.create({ rol: 'admin' });
+            let admin = await usuariosModel.create(
+                {
+                    id_rol: nuevoRolAdmin._id,
+                    nombre: 'Jose',
+                    apellido: 'Cabrera',
+                    edad: 30,
+                    email: 'cabrerajosemiguel28@gmail.com',
+                    contraseña: passEncrypted,
+                }
+            );
+            roles.push(nuevoRolAdmin);
+        }
         console.log("Conexion a Base de datos exitoso");       
     } catch (error) {
         console.log(error);

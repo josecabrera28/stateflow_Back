@@ -10,6 +10,10 @@ const controllerRegistro = async (req,res) => {
         /**busca el rol id del rol requerido y lo actualiza en el request y luego deja unicamente lo que hace match con
          * el validador del registro*/ 
         let desiredrol = req.body.id_rol;
+        if(desiredrol != 'propietario' && desiredrol != 'arrendatario'){
+            handleHtttpError(res,'Campo rol debe ser propietario o arrendatario');
+            return;
+        }
         desiredrol = await rolesModel.findOne({rol: desiredrol});
         req = matchedData(req);
         req.id_rol = desiredrol._id;
