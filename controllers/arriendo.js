@@ -1,5 +1,6 @@
-const { arriendosModel, propiedadesModel } = require('../models');
+const { arriendosModel, propiedadesModel, rolesModel, usuariosModel } = require('../models');
 const handleHtttpError = require('../utils/handleError');
+const { encrypt } = require('../utils/handlePassword');
 /**valida que la propiedad a la que pertenece el arriendo que busca 
  * cambiar el precio sea del usuario que hace la consulta; busca el
  * arriendo al cual le quiere cambiar el precio y actualiza el valor
@@ -69,4 +70,75 @@ const removerarrendatario = async(req,res)=>{
         handleHtttpError(res, "Error al conseguir propiedad");
     }
 }
-module.exports = {darPrecio, removerarrendatario}
+/**valida que 
+ */
+const adicionararrendatario = async(req,res)=>{
+    try {
+        const arriendo = req.params.arriendoId;
+        const id = req.params.idPropiedad;
+        const user = req.usuario._id;
+        const propiedad = await propiedadesModel.findOne({_id:id, propietario:user});
+        if (!propiedad || propiedad.length === 0) {
+            handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
+        }else{
+            let esMiPropiedad = false;
+            const propiedadesPropias = await propiedadesModel.find({propietario: user});
+            for (let index = 0; index < propiedadesPropias.length; index++) {
+                for (let j = 0; j < propiedadesPropias[index].ingresos.arriendos.length; j++) {
+                    if(propiedadesPropias[index].ingresos.arriendos[j].arriendoId.equals(arriendo)){
+                        esMiPropiedad = true;
+                        const esarrendado = await arriendosModel.findOne({_id:arriendo});
+                        if(esarrendado.arrendado){
+                            handleHtttpError(res, `El ${esarrendado.tipo} ya esta arrendado`);
+                            return;
+                        }
+                    }
+                }
+            }
+            if(esMiPropiedad){
+                /**busca el rol id del rol requerido y lo actualiza en el request y luego deja unicamente lo que hace match con
+                * el validador del registro*/ 
+                let nuevoArrendatario = req.body;
+                nuevoArrendatario.contraseña = '1234567890';
+                let desiredrol = nuevoArrendatario.id_rol;
+                if(desiredrol != 'arrendatario'){
+                    handleHtttpError(res,'Campo rol debe ser arrendatario');
+                    return;
+                }
+                desiredrol = await rolesModel.findOne({rol: desiredrol});
+                nuevoArrendatario.id_rol = desiredrol._id;
+                /**busca en la base de datos si ya existe un usuario con el mismo email para responder con una mensaje de que
+                 * el email ya existe y debe registrarse con otro*/ 
+                const esUsuario = await usuariosModel.findOne({email: nuevoArrendatario.email});
+                if(esUsuario){
+                    res.status(401);
+                    res.send({message: "Ya existe una cuenta registrada con el correo del arrendatario."});
+                }else{
+                    //encripta la contraseña con bcrypt
+                    const contraseñaEnc = await encrypt (nuevoArrendatario.contraseña);
+                    nuevoArrendatario.contraseña=contraseñaEnc;
+                    //crea un documento en la base de datos de usuarios
+                    const infoUsuario = await usuariosModel.create(nuevoArrendatario);
+                    //cambia el valor del atributo contraseña a undefined para cuando se envie la respuesta no se incluya dicha contraseña
+                    infoUsuario.set("contraseña", undefined, {strict:false});
+                    /**si el propietario respónde con confirmado igualmente 
+                     * actualiza la peticion y sigue al siguiente en la ruta
+                     */
+                    const arriendoActualizado = await arriendosModel.findByIdAndUpdate(
+                        arriendo,
+                        { $set: { arrendado: true, arrendatario: infoUsuario} },
+                        { new: true }
+                    );
+                    res.status(201);
+                    res.send(arriendoActualizado);            
+                }
+            }else{
+                handleHtttpError(res, 'El arriendo no existe o no pertenece a este usuario');
+            }          
+        }        
+    } catch (error) {
+        console.log(error);
+        handleHtttpError(res, "Error al conseguir propiedad");
+    }
+}
+module.exports = {darPrecio, removerarrendatario, adicionararrendatario}
