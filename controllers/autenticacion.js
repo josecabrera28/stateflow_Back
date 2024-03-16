@@ -49,7 +49,14 @@ const controllerLogin = async (req,res) =>{
     try {
         req = matchedData(req);
         //busca si existe algun usuario con el mismo email usado para loguearse
-        const infoUsuario = await usuariosModel.findOne({email:req.email});
+        const infoUsuario = await usuariosModel.findOne({email:req.email})
+        .populate(
+            {
+                path: 'id_rol',
+                select: 'rol',
+                model: 'roles'
+            }
+        );
         //caso en que no encuentre ningun usuario con el email enviado
         if(infoUsuario==null){
             res.send({message:"No existe una cuenta con este correo electronico"});

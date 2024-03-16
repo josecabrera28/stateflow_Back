@@ -7,7 +7,7 @@ const firmarToken = async (usuario) =>{
     const firma = await jwt.sign(
         {
             _id: usuario._id,
-            rol: usuario.id_rol
+            rol: usuario.id_rol.rol
         },
         JWT_SECRET,
         {
