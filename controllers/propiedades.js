@@ -68,7 +68,17 @@ const listaPropiedades = async (req,res)=>{
         if(req.usuario.id_rol.rol == "admin"){
             lista = await propiedadesModel.find({});
         }else{
-            lista = await propiedadesModel.find({propietario: req.usuario._id});
+            lista = await propiedadesModel.find({propietario: req.usuario._id})
+            .populate({
+                path: 'ingresos.arriendos.arriendoId',
+                model: 'arriendos',
+                select: 'precio arrendado arrendatario',
+                populate: {
+                    path: 'arrendatario',
+                    model: 'usuarios',
+                    select: 'nombre apellido edad'
+                }
+            })
         }
         res.send(lista);    
     } catch (error) {
