@@ -107,6 +107,12 @@ const adicionararrendatario = async(req,res)=>{
                 }
                 desiredrol = await rolesModel.findOne({rol: desiredrol});
                 nuevoArrendatario.id_rol = desiredrol._id;
+                // Validación del formato del correo electrónico
+                const emailRegex = /^[\w-]+(?:\.[\w-]+)*@(?:[\w-]+\.)+[a-zA-Z]{2,7}$/;
+                if (!emailRegex.test(nuevoArrendatario.email)) {
+                    handleHtttpError(res, 'El formato del correo electrónico no es válido.');
+                    return;
+                }
                 /**busca en la base de datos si ya existe un usuario con el mismo email para responder con una mensaje de que
                  * el email ya existe y debe registrarse con otro*/ 
                 const esUsuario = await usuariosModel.findOne({email: nuevoArrendatario.email});
