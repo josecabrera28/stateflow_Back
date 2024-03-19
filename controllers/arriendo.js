@@ -54,11 +54,14 @@ const removerarrendatario = async(req,res)=>{
             let nuevoArriendo;
             for(let i=0; i<propiedad.ingresos.arriendos.length; i++){
                 if(propiedad.ingresos.arriendos[i].arriendoId==arriendo){
+                    let arrendatarioId = await arriendosModel.findById(arriendo);
+                    arrendatarioId = arrendatarioId.arrendatario;
                     nuevoArriendo = await arriendosModel.findByIdAndUpdate(
                         arriendo,
                         { $set: { arrendado: false }, $unset: { arrendatario: 1 } },
                         { new: true }
                     );
+                    usuarioRemovido = await usuariosModel.findByIdAndDelete(arrendatarioId);
                     res.send(nuevoArriendo);
                 }
             }if(nuevoArriendo==undefined){
@@ -72,12 +75,16 @@ const removerarrendatario = async(req,res)=>{
 }
 /**valida que 
  */
-const adicionararrendatario = async(req,res)=>{
+const adicionararrendatario = async(req,res,next)=>{
     try {
         const arriendo = req.params.arriendoId;
         const id = req.params.idPropiedad;
         const user = req.usuario._id;
         const propiedad = await propiedadesModel.findOne({_id:id, propietario:user});
+        if (!req.actualizado) {
+            // Si no está definido, inicialízalo como un objeto vacío
+            req.actualizado = {};
+        }
         if (!propiedad || propiedad.length === 0) {
             handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
         }else{
@@ -92,6 +99,8 @@ const adicionararrendatario = async(req,res)=>{
                             handleHtttpError(res, `El ${esarrendado.tipo} ya esta arrendado`);
                             return;
                         }
+                        esarrendado.tipo == 'cuarto' ? req.actualizado.esCuarto = true : req.actualizado.esCuarto = false ;
+                        esarrendado.tipo == 'parqueadero' ? req.actualizado.esParqueadero = true : req.actualizado.esParqueadero = false;
                     }
                 }
             }
@@ -135,8 +144,9 @@ const adicionararrendatario = async(req,res)=>{
                         { $set: { arrendado: true, arrendatario: infoUsuario} },
                         { new: true }
                     );
-                    res.status(201);
-                    res.send(arriendoActualizado);            
+                    req.actualizado.arrendatario = infoUsuario._id;
+                    req.actualizado.arriendo = req.params.arriendoId;
+                    next();            
                 }
             }else{
                 handleHtttpError(res, 'El arriendo no existe o no pertenece a este usuario');

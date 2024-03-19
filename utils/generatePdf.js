@@ -2,6 +2,7 @@ const PDFDocument = require('pdfkit');
 const handleHtttpError = require('./handleError');
 const { usuariosModel, propiedadesModel, arriendosModel } = require('../models');
 const { default: mongoose } = require('mongoose');
+const { uploadFile } = require('./awsHandler');
 
 //funcion asincrona encargada de la generacion del contrato en formato pdf
 const generate = async (req, res) =>{
@@ -32,7 +33,6 @@ const generate = async (req, res) =>{
                 }
             }
         }
-        console.log(propiedad);
         //busca el arriendo
         let arriendoDetalles = await arriendosModel.findById(req.actualizado.arriendo);
         
@@ -182,11 +182,14 @@ const generate = async (req, res) =>{
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'attachment; filename=contrato.pdf');
 
+        //subir pdf a AWS
+        const uploaded = await uploadFile(propiedad._id,arriendoDetalles._id, arrendatario._id, doc);
+
         // Pipe directamente los datos del documento al stream de respuesta
         doc.pipe(res);
 
         // Cerramos el stream al finalizar el documento
-        doc.on('end', () => res.end());
+        //doc.on('end', () => res.end());
     } catch (error) {
         console.log(error);
         handleHtttpError(res, "Error al generar Pdf");

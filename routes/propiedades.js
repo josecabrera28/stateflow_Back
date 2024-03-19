@@ -5,6 +5,7 @@ const authMiddleware = require('../middlewares/authJWT');
 const checkRole = require('../middlewares/rol');
 const { darPrecio, removerarrendatario, adicionararrendatario } = require('../controllers/arriendo');
 const { validadorGasto } = require('../validators/validadorGasto');
+const { generate } = require('../utils/generatePdf');
 const router = express.Router();
 
 
@@ -24,7 +25,7 @@ router.delete('/:id',authMiddleware, checkRole(["propietario"]),borrarPropiedad)
 router.put('/precio/:idPropiedad/:arriendoId',authMiddleware, checkRole(["propietario"]), darPrecio);
 
 //adicionar arrendatario a un arriendo
-router.put('/adicionararrendatario/:idPropiedad/:arriendoId',authMiddleware, checkRole(["propietario"]), adicionararrendatario);
+router.put('/adicionararrendatario/:idPropiedad/:arriendoId',authMiddleware, checkRole(["propietario"]), adicionararrendatario,generate);
 
 //remover arrendatario de un arriendo
 router.put('/removerarrendatario/:idPropiedad/:arriendoId',authMiddleware, checkRole(["propietario"]), removerarrendatario);
