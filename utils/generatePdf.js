@@ -182,8 +182,9 @@ const generate = async (req, res) =>{
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'attachment; filename=contrato.pdf');
 
+        const nombreCompleto = arrendatario.nombre + '_' + arrendatario.apellido;
         //subir pdf a AWS
-        const uploaded = await uploadFile(propiedad._id,arriendoDetalles._id, arrendatario._id, doc);
+        const uploaded = await uploadFile(propiedad._id,arriendoDetalles._id, nombreCompleto, doc);
 
         // Pipe directamente los datos del documento al stream de respuesta
         doc.pipe(res);

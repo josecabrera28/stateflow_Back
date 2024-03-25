@@ -1,6 +1,7 @@
 const { matchedData } = require('express-validator');
 const {propiedadesModel, arriendosModel, registrosModel, } = require('../models');
 const handleHtttpError = require('../utils/handleError');
+const { listFiles, downloadFile } = require('../utils/awsHandler');
 
 //Crear una propiedad con usuario propietario
 const crearPropiedad = async (req, res) =>{
@@ -61,7 +62,7 @@ const crearPropiedad = async (req, res) =>{
         handleHtttpError(res,"Error al crear la propiedad");
     }
 }
-//Crear una propiedad con usuario propietario o admin
+//Lista las propiedades de un usuario propietario o admin
 const listaPropiedades = async (req,res)=>{
     let lista = {};
     try {
@@ -330,6 +331,32 @@ const elimiarGasto = async (req, res) => {
         handleHtttpError(res, "Error al conseguir gastos del año");
     }
 }
+//Lista las contratos de una propiedad de propietario
+const listaContratos = async (req,res)=>{
+    try {
+        const propiedad = req.params.idpropiedad;
+        const data = await listFiles(propiedad);
+        
+        res.send(data);    
+    } catch (error) {
+        handleHtttpError(res,"Error al listar contratos de S3")
+    }
+}
+//Lista las contratos de una propiedad de propietario
+const descargarContrato = async (req,res)=>{
+    try {
+        const propiedad = req.params.idpropiedad;
+        const arriendo = req.params.idarriendo;
+        const arrendatario = req.params.arrendatario;
+        const data = await downloadFile(propiedad, arriendo, arrendatario);
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename=contrato.pdf');
+        res.send(data);    
+    } catch (error) {
+        handleHtttpError(res,"Error al descargar contrato de S3")
+    }
+}
 
 module.exports = {
     crearPropiedad,
@@ -339,4 +366,7 @@ module.exports = {
     nuevoGasto,
     listaGastosMes,
     listaGastosAño,
-    elimiarGasto};
+    elimiarGasto,
+    listaContratos,
+    descargarContrato
+};

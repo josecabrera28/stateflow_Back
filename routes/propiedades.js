@@ -1,6 +1,6 @@
 const express = require('express');
 const { validarPropiedadNueva } = require('../validators/validadorPropiedades');
-const {crearPropiedad, borrarPropiedad, listaPropiedades, obtenerPropiedad, nuevoGasto, listaGastosAño, listaGastosMes, elimiarGasto} = require('../controllers/propiedades');
+const {crearPropiedad, borrarPropiedad, listaPropiedades, obtenerPropiedad, nuevoGasto, listaGastosAño, listaGastosMes, elimiarGasto, listaContratos, descargarContrato} = require('../controllers/propiedades');
 const authMiddleware = require('../middlewares/authJWT');
 const checkRole = require('../middlewares/rol');
 const { darPrecio, removerarrendatario, adicionararrendatario } = require('../controllers/arriendo');
@@ -41,5 +41,11 @@ router.get('/gastosmes/:idpropiedad/:periodo/:mes',authMiddleware, checkRole(["p
 
 //eliminar gasto
 router.delete('/eliminargasto/:idpropiedad/:periodo/:mes',authMiddleware, checkRole(["propietario"]),elimiarGasto);
+
+//obtener lista de contratos en S3
+router.get('/lista/s3/:idpropiedad', authMiddleware, checkRole(["propietario"]), listaContratos);
+
+//descargar contrato de S3
+router.get('/descargar/s3/:idpropiedad/:idarriendo/:arrendatario', authMiddleware, checkRole(["propietario"]), descargarContrato);
 
 module.exports=router;
