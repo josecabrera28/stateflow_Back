@@ -9,6 +9,15 @@ const arriendosScheme = mongoose.Schema({
         ref: "usuarios"
     },
     arrendado: Boolean,
+    historialPrecios: [{
+        precioHistorico: Number,
+        fechaInicio: Date,
+        fechaFin: Date
+    }],
+},
+{
+    timestamps: true,   //TODO createAt, updateAt
+    versionkey: false
 })
 
 module.exports = mongoose.model("arriendos",arriendosScheme);

@@ -12,19 +12,61 @@ const darPrecio = async (req,res) =>{
         const arriendo = req.params.arriendoId;
         const id = req.params.idPropiedad;
         const user = req.usuario._id;
-        const propiedad = await propiedadesModel.findOne({_id:id, propietario:user});
+        const propiedad = await propiedadesModel.findOne({_id:id, propietario:user})
+        .populate(
+            {
+                path: 'ingresos.arriendos.arriendoId',
+                model: 'arriendos'
+            }
+        );
         if (!propiedad || propiedad.length === 0) {
             handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
         }else{
             let nuevoArriendo;
             for(let i=0; i<propiedad.ingresos.arriendos.length; i++){
-                if(propiedad.ingresos.arriendos[i].arriendoId==arriendo){
+                if(propiedad.ingresos.arriendos[i].arriendoId._id == arriendo
+                    && propiedad.ingresos.arriendos[i].arriendoId.arrendado == true){                    
+                    // Primero, actualiza el campo 'historialPrecios.$[elem].fechaFin'
+                    nuevoArriendo = await arriendosModel.findByIdAndUpdate(
+                        arriendo,
+                        {
+                            $set: { "historialPrecios.$[elem].fechaFin": new Date() }
+                        },
+                        {
+                            arrayFilters: [{ "elem.fechaFin": { $exists: false } }], 
+                        }
+                    );
+                    /**actualiza el historialPrecios poniendo fechaFin con el precio anterior
+                     */
+                    let fechaMesProx = new Date();
+                    fechaMesProx.setMonth(fechaMesProx.getMonth() + 1);
+                    fechaMesProx.setDate(1);
+                    // A continuación, agrega un nuevo objeto al array 'historialPrecios'
+                    nuevoArriendo = await arriendosModel.findByIdAndUpdate(
+                        arriendo,
+                        {
+                            $set: { precio: nuevoPrecio },
+                            $push: { 
+                                historialPrecios: {
+                                    precioHistorico: nuevoPrecio, 
+                                    fechaInicio: fechaMesProx
+                                }
+                            }
+                        },
+                        { new: true }
+                    );
+                    res.send(nuevoArriendo);
+                    return;
+                }
+                else if(propiedad.ingresos.arriendos[i].arriendoId._id == arriendo
+                    && propiedad.ingresos.arriendos[i].arriendoId.arrendado == false ){
                     nuevoArriendo = await arriendosModel.findByIdAndUpdate(
                         arriendo,
                         { $set: { precio: nuevoPrecio } },
                         { new: true }
-                    );
+                    );                    
                     res.send(nuevoArriendo);
+                    return;
                 }
             }if(nuevoArriendo==undefined){
                 handleHtttpError(res, "El arriendo no existe o no pertenece a este usuario");
@@ -34,8 +76,8 @@ const darPrecio = async (req,res) =>{
         console.log(error);
         handleHtttpError(res, "Error al conseguir propiedad");
     }
-
 }
+
 /**valida que la propiedad a la que pertenece el arrrendatario que busca 
  * remover sea del usuario que hace la consulta; busca el
  * arriendo que contiene dicho arrendatario y actualiza el valor
@@ -58,8 +100,14 @@ const removerarrendatario = async(req,res)=>{
                     arrendatarioId = arrendatarioId.arrendatario;
                     nuevoArriendo = await arriendosModel.findByIdAndUpdate(
                         arriendo,
-                        { $set: { arrendado: false }, $unset: { arrendatario: 1 } },
-                        { new: true }
+                        { $set: { arrendado: false },
+                        $unset: { arrendatario: 1 },
+                        $set: { "historialPrecios.$[elem].fechaFin": new Date() }
+                        },
+                        { 
+                            new: true,
+                            arrayFilters: [{ "elem.fechaFin": { $exists: false } }] // Filtro para actualizar solo si fechaFin no existe
+                        }
                     );
                     usuarioRemovido = await usuariosModel.findByIdAndDelete(arrendatarioId);
                     res.send(nuevoArriendo);
@@ -73,13 +121,17 @@ const removerarrendatario = async(req,res)=>{
         handleHtttpError(res, "Error al conseguir propiedad");
     }
 }
-/**valida que 
+/**valida que la propiedad exista y pertenezca al propietario
+ * tambien valida que el arriendo no este arrendado
+ * valida el email del arrendatario con regex 
  */
 const adicionararrendatario = async(req,res,next)=>{
     try {
         const arriendo = req.params.arriendoId;
         const id = req.params.idPropiedad;
         const user = req.usuario._id;
+        let precioActual;
+        let copiaHistorialPrecios;
         const propiedad = await propiedadesModel.findOne({_id:id, propietario:user});
         if (!req.actualizado) {
             // Si no está definido, inicialízalo como un objeto vacío
@@ -99,6 +151,8 @@ const adicionararrendatario = async(req,res,next)=>{
                             handleHtttpError(res, `El ${esarrendado.tipo} ya esta arrendado`);
                             return;
                         }
+                        precioActual = esarrendado.precio;
+                        esarrendado.historialPrecios ? copiaHistorialPrecios = esarrendado.historialPrecios : copiaHistorialPrecios = undefined;
                         esarrendado.tipo == 'cuarto' ? req.actualizado.esCuarto = true : req.actualizado.esCuarto = false ;
                         esarrendado.tipo == 'parqueadero' ? req.actualizado.esParqueadero = true : req.actualizado.esParqueadero = false;
                     }
@@ -139,9 +193,19 @@ const adicionararrendatario = async(req,res,next)=>{
                     /**si el propietario respónde con confirmado igualmente 
                      * actualiza la peticion y sigue al siguiente en la ruta
                      */
+                    /**actualiza el historialPrecios del arriendo con el precio actual del
+                     * arriendo y la fecha en que se realiza el contrato de arrendamiento
+                     */
                     const arriendoActualizado = await arriendosModel.findByIdAndUpdate(
                         arriendo,
-                        { $set: { arrendado: true, arrendatario: infoUsuario} },
+                        { $set: { arrendado: true, arrendatario: infoUsuario},
+                        $push: { 
+                            historialPrecios: {
+                                precioHistorico: precioActual, 
+                                fechaInicio: new Date(),
+                            }
+                        }
+                        },
                         { new: true }
                     );
                     req.actualizado.arrendatario = infoUsuario._id;
@@ -157,4 +221,65 @@ const adicionararrendatario = async(req,res,next)=>{
         handleHtttpError(res, "Error al conseguir propiedad");
     }
 }
-module.exports = {darPrecio, removerarrendatario, adicionararrendatario}
+
+const listarIngresos = async (req,res)=>{
+    const id = req.params.idpropiedad;
+    const user = req.usuario._id;
+    const periodo = Number.parseInt(req.params.periodo);
+    let ingresos = {'1':0, '2':0, '3':0, '4':0, '5':0, '6':0, '7':0, '8':0, '9':0, '10':0, '11':0, '12':0};
+    const propiedad = await propiedadesModel.findOne({_id:id, propietario:user})
+    .populate(
+        {
+            path: 'ingresos.arriendos.arriendoId',
+            model: 'arriendos'
+        }
+    );
+    if (!propiedad || propiedad.length === 0) {
+        handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
+    }else{
+        let fecha0;
+        let fecha1;
+        let ano0;
+        let ano1;
+        let mes0;
+        let mes1;
+        const arriendos = propiedad.ingresos.arriendos;
+        for (let index = 0; index < arriendos.length; index++) {
+            for (let x = 0; x < arriendos[index].arriendoId.historialPrecios.length; x++) {
+                fecha0 = arriendos[index].arriendoId.historialPrecios[x].fechaInicio;
+                fecha1 = arriendos[index].arriendoId.historialPrecios[x].fechaFin;
+                if (fecha1 !== undefined) {
+                    ano1 = fecha1.getFullYear();
+                    mes1 = fecha1.getMonth() + 1;
+                }else {
+                    // Si fecha1 es undefined, asigna la fecha actual
+                    fecha1 = new Date();
+                    ano1 = fecha1.getFullYear();
+                    mes1 = fecha1.getMonth() + 1;
+                }
+                ano0 = fecha0.getFullYear();
+                mes0 = fecha0.getMonth() + 1;
+                if(ano0 == periodo && ano1 == periodo){
+                    do{
+                        ingresos[mes0] += arriendos[index].arriendoId.historialPrecios[x].precioHistorico;
+                        mes0++;
+                    }while(mes0 <= mes1);
+                }else if(ano0 != periodo && ano1 == periodo){
+                    let counter =1;
+                    do{
+                        ingresos[counter] += arriendos[index].arriendoId.historialPrecios[x].precioHistorico;
+                        counter++;
+                    }while(counter <= mes1);
+                }else if(ano0 == periodo && ano1 != periodo){
+                    do{
+                        ingresos[mes0] += arriendos[index].arriendoId.historialPrecios[x].precioHistorico;
+                        mes0++;
+                    }while(mes0 <= 12);
+                }
+            }
+        }
+        //const historialIngresos = propiedad.ingresos.arriendoId.historialPrecios;
+        res.send(ingresos);
+    }
+}
+module.exports = {darPrecio, removerarrendatario, adicionararrendatario, listarIngresos}
