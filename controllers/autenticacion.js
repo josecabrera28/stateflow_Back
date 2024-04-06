@@ -16,6 +16,10 @@ const controllerRegistro = async (req,res) => {
         }
         desiredrol = await rolesModel.findOne({rol: desiredrol});
         req = matchedData(req);
+        if (typeof req.nombre == 'string' && typeof req.apellido == 'string') {
+            req.nombre = req.nombre.toLowerCase();
+            req.apellido = req.apellido.toLowerCase();
+        }
         req.id_rol = desiredrol._id;
         /**busca en la base de datos si ya existe un usuario con el mismo email para responder con una mensaje de que
          * el email ya existe y debe registrarse con otro*/ 
@@ -41,6 +45,7 @@ const controllerRegistro = async (req,res) => {
             res.send(dataUsuario);            
         }
     } catch (error) {
+        console.log(error);
         handleHtttpError(res, error);
     }
 }

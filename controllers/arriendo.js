@@ -100,13 +100,19 @@ const removerarrendatario = async(req,res)=>{
                     arrendatarioId = arrendatarioId.arrendatario;
                     nuevoArriendo = await arriendosModel.findByIdAndUpdate(
                         arriendo,
-                        { $set: { arrendado: false },
+                        {
                         $unset: { arrendatario: 1 },
                         $set: { "historialPrecios.$[elem].fechaFin": new Date() }
                         },
                         { 
-                            new: true,
                             arrayFilters: [{ "elem.fechaFin": { $exists: false } }] // Filtro para actualizar solo si fechaFin no existe
+                        }
+                    );
+                    nuevoArriendo = await arriendosModel.findByIdAndUpdate(
+                        arriendo,
+                        { $set: { arrendado: false }},
+                        { 
+                            new: true,
                         }
                     );
                     usuarioRemovido = await usuariosModel.findByIdAndDelete(arrendatarioId);
