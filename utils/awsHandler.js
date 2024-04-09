@@ -70,5 +70,17 @@ const downloadFile = async (propiedad, arriendo, arrendatario) => {
     }
 };
 
-
-module.exports = { uploadFile, listFiles, downloadFile };
+//eliminar contrato de S3
+const deleteFile = async (propiedad, arriendo, arrendatario) => {
+    try {
+        const options = {
+            Bucket: 'stateflow-contracts',
+            Key: `${propiedad}/${arriendo}/${arrendatario}.pdf`,
+        };
+        await s3.deleteObject(options).promise();
+    } catch (error) {
+        console.error('Error en el handler de eliminar contrato de S3:', error);
+        throw error;
+    }
+}
+module.exports = { uploadFile, listFiles, downloadFile, deleteFile };

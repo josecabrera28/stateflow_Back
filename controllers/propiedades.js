@@ -1,7 +1,7 @@
 const { matchedData } = require('express-validator');
-const {propiedadesModel, arriendosModel, registrosModel, } = require('../models');
+const {propiedadesModel, arriendosModel, registrosModel, usuariosModel, } = require('../models');
 const handleHtttpError = require('../utils/handleError');
-const { listFiles, downloadFile } = require('../utils/awsHandler');
+const { listFiles, downloadFile, deleteFile } = require('../utils/awsHandler');
 
 //Crear una propiedad con usuario propietario
 const crearPropiedad = async (req, res) =>{
@@ -107,6 +107,8 @@ const borrarPropiedad = async (req, res) =>{
         //id de la propiedad lo obtiene por la url en su parametro id
         const id = req.params.id;
         const user = req.usuario._id;
+        let arriendoEliminado;
+        let nombreCompleto;
         /**valida que la propiedad a eliminar sea del usuario
          * que esta haciendo la solicitud
          */
@@ -116,7 +118,12 @@ const borrarPropiedad = async (req, res) =>{
         }else{
             //eliminar referencias de arriendos
             for(let i=0; i<propiedad.ingresos.arriendos.length; i++){
-                await arriendosModel.deleteOne({_id: propiedad.ingresos.arriendos[i].arriendoId});
+                arriendoEliminado = await arriendosModel.findByIdAndDelete(propiedad.ingresos.arriendos[i].arriendoId);
+                if(arriendoEliminado.arrendatario){
+                    nombreCompleto = await usuariosModel.findByIdAndDelete(arriendoEliminado.arrendatario);
+                    nombreCompleto = nombreCompleto.nombre + '_' + nombreCompleto.apellido;
+                    await deleteFile(id,arriendoEliminado._id.toString(),nombreCompleto);
+                }
             }
             //eliiminar referencias de registros
             for(let i=0; i<propiedad.gastos.length; i++){
@@ -129,6 +136,7 @@ const borrarPropiedad = async (req, res) =>{
             res.send({propiedadEliminada,propiedad});    
         }        
     } catch (error) {
+        console.log(error);
         handleHtttpError(res,"Error al borrar propiedad");
     }
 }

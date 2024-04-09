@@ -1,4 +1,5 @@
 const { arriendosModel, propiedadesModel, rolesModel, usuariosModel } = require('../models');
+const { deleteFile } = require('../utils/awsHandler');
 const handleHtttpError = require('../utils/handleError');
 const { encrypt } = require('../utils/handlePassword');
 /**valida que la propiedad a la que pertenece el arriendo que busca 
@@ -89,15 +90,22 @@ const removerarrendatario = async(req,res)=>{
         const arriendo = req.params.arriendoId;
         const id = req.params.idPropiedad;
         const user = req.usuario._id;
+        //busca la propiedad del usuario
         const propiedad = await propiedadesModel.findOne({_id:id, propietario:user});
         if (!propiedad || propiedad.length === 0) {
             handleHtttpError(res, "La propiedad no existe o no pertenece a este usuario");
         }else{
             let nuevoArriendo;
+            //itera en los arriendos de la propiedad en busca del id del arriendo solicitado
             for(let i=0; i<propiedad.ingresos.arriendos.length; i++){
                 if(propiedad.ingresos.arriendos[i].arriendoId==arriendo){
+                    //llama el arriendo encontrado
                     let arrendatarioId = await arriendosModel.findById(arriendo);
                     arrendatarioId = arrendatarioId.arrendatario;
+                    /**
+                     * actualiza el arriendo removiendo el campo arrendatario, agrega la fecha
+                     * en que se removio al arrendatario en el historial
+                     * */
                     nuevoArriendo = await arriendosModel.findByIdAndUpdate(
                         arriendo,
                         {
@@ -108,6 +116,7 @@ const removerarrendatario = async(req,res)=>{
                             arrayFilters: [{ "elem.fechaFin": { $exists: false } }] // Filtro para actualizar solo si fechaFin no existe
                         }
                     );
+                    //actualiza el arriendo como no arrendado
                     nuevoArriendo = await arriendosModel.findByIdAndUpdate(
                         arriendo,
                         { $set: { arrendado: false }},
@@ -115,7 +124,11 @@ const removerarrendatario = async(req,res)=>{
                             new: true,
                         }
                     );
+                    //busca y eliminar al usuario arrendatario
                     usuarioRemovido = await usuariosModel.findByIdAndDelete(arrendatarioId);
+                    const nombreCompleto = usuarioRemovido.nombre + '_' + usuarioRemovido.apellido;
+                    //elimina el contrato de arrendamiento en aws s3 del arrendatario
+                    pdfRemovido = await deleteFile(id,arriendo,nombreCompleto);
                     res.send(nuevoArriendo);
                 }
             }if(nuevoArriendo==undefined){
