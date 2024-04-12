@@ -23,17 +23,22 @@ app.use("/api",routes);
 
 //create a port for the app to listen
 const port = process.env.PORT? process.env.PORT : 2001;
+//entorno en el cual se esta ejecutando la app
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
-//servidor escuchando
-app.listen(port,()=>{
+if(NODE_ENV !== 'test'){
+    //servidor escuchando
+    app.listen(port,()=>{
     console.log("Servidor corriendo y escuchando por el puerto "+port);
-});
+    });
+}
 
+const DB_URI = (NODE_ENV === 'test')? process.env.URI_TEST : process.env.URI;
 //funcion asincrona para la conexion a la base de datos ya que es un recurso externo
 async function mongoConnection (){
     try {
         //conexion
-        await mongoose.connect(process.env.URI,{
+        await mongoose.connect(DB_URI,{
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
@@ -65,11 +70,11 @@ async function mongoConnection (){
                 }
             );
             roles.push(nuevoRolAdmin);
-        }
-        console.log("Conexion a Base de datos exitoso");       
+        }     
     } catch (error) {
         console.log(error);
     }    
 }
 
 mongoConnection();
+module.exports = app;

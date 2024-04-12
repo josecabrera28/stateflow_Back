@@ -64,8 +64,7 @@ const controllerLogin = async (req,res) =>{
         );
         //caso en que no encuentre ningun usuario con el email enviado
         if(infoUsuario==null){
-            res.send({message:"No existe una cuenta con este correo electronico"});
-            res.status(401);
+            handleHtttpError(res,"No existe una cuenta con este correo electronico");
         }else{
             //compara la contraseña plana contra la contraseña encriptada del usuario obtenido en linea 48
             const contraseñaOk = await compare(req.contraseña,infoUsuario.contraseña);
@@ -78,11 +77,10 @@ const controllerLogin = async (req,res) =>{
                     token: await firmarToken(infoUsuario),
                     usuario: infoUsuario
                 }
-                res.send(dataUsuario);
                 res.status(201);
+                res.send(dataUsuario);
             }else{
-                res.send({message:"Contraseña o email incorrecto"});
-                res.status(401);
+                handleHtttpError(res, 'Contraseña o email incorrecto');
             }
         } 
     } catch (error) {
