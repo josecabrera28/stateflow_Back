@@ -18,6 +18,7 @@ app.use(cors());
 app.use(express.json());
 app.use(router);
 
+app.use(express.static('stateflow-front'));
 //call root route http//localhost:2000/api
 app.use("/api",routes);
 
